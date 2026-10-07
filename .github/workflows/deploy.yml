@@ -34,6 +34,18 @@ jobs:
             sudo -n systemctl restart clients.service
             sudo -n systemctl is-active clients.service
 
-            curl -fsS http://127.0.0.1:3344/ > /dev/null
+                        attempt=1
 
-            echo "DEPLOY_CLIENTS_OK"
+            while [ "$attempt" -le 15 ]; do
+              if curl -fsS http://127.0.0.1:3344/ > /dev/null; then
+                echo "DEPLOY_CLIENTS_OK"
+                exit 0
+              fi
+
+              echo "Attente du serveur Astro : tentative $attempt/15"
+              sleep 2
+              attempt=$((attempt + 1))
+            done
+
+            echo "Le serveur Astro ne répond pas sur le port 3344"
+            exit 1
