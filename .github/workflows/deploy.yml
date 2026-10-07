@@ -1,0 +1,39 @@
+name: Deploy Clients Astro SSR
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy on VPS
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          port: ${{ secrets.SSH_PORT }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 15m
+          script: |
+            set -e
+
+            export BUN_INSTALL="$HOME/.bun"
+            export PATH="$BUN_INSTALL/bin:$PATH"
+
+            cd /var/www/clients/astro-clients-ssr
+
+            git pull --ff-only origin main
+            bun install --frozen-lockfile
+            bun run build
+
+            sudo -n systemctl restart clients.service
+            sudo -n systemctl is-active clients.service
+
+            curl -fsS http://127.0.0.1:3344/ > /dev/null
+
+            echo "DEPLOY_CLIENTS_OK"
